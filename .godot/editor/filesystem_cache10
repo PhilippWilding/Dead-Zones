@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1776406553
+::res://::1776406681
 export_presets.cfg::TextFile::-1::1776087490::0::1::::<><><>0<>0<><>::
 README.md::TextFile::-1::1776406468::0::1::::<><><>0<>0<><>::
 ::res://assets/::1776087490
@@ -71,7 +71,7 @@ main.tscn::PackedScene::630662069864::1776087499::0::1::::<><><>0<>0<><>::res://
 player.tscn::PackedScene::27365761918488::1776087490::0::1::::<><><>0<>0<><>::res://scripts/player.gd
 zombie.tscn::PackedScene::45398768490512::1776087490::0::1::::<><><>0<>0<><>::res://scripts/zombie.gd<>res://scripts/zombie_hitbox.gd
 ::res://scripts/::1776087735
-environment_controller.gd::GDScript::4239132016340530657::1776406443::0::1::::<>Node3D<><>0<>0<><>::
+environment_controller.gd::GDScript::4239132016340530657::1776406626::0::1::::<>Node3D<><>0<>0<><>::
 game_manager.gd::GDScript::1107880702585157809::1776087499::0::1::::<>Node<><>0<>0<><>::
 handbook_book.gd::GDScript::3982513685297990710::1776087490::0::1::::<>Control<><>0<>0<><>::
 hud.gd::GDScript::3632510194491325148::1776087490::0::1::::<>CanvasLayer<><>0<>0<><>::
