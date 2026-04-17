@@ -8,77 +8,77 @@ const WEATHER_STORM := 4
 
 const WEATHER_PROFILES := {
 	WEATHER_CLEAR: {
-		"sky_shadow": 0.26,
-		"fog_density": 0.02,
+		"sky_shadow": 0.34,
+		"fog_density": 0.002,
 		"rain_amount": 0.0,
-		"light_multiplier": 0.38,
-		"ambient_multiplier": 0.38,
+		"light_multiplier": 0.56,
+		"ambient_multiplier": 0.5,
 		"storminess": 0.04,
-		"blood_tint": 0.22,
-		"toxic_tint": 0.38,
-		"purple_tint": 0.24,
-		"void_depth": 0.55
+		"blood_tint": 0.02,
+		"toxic_tint": 0.12,
+		"purple_tint": 0.02,
+		"void_depth": 0.28
 	},
 	WEATHER_CLOUDY: {
-		"sky_shadow": 0.45,
-		"fog_density": 0.03,
+		"sky_shadow": 0.5,
+		"fog_density": 0.0045,
 		"rain_amount": 0.0,
-		"light_multiplier": 0.28,
-		"ambient_multiplier": 0.3,
+		"light_multiplier": 0.48,
+		"ambient_multiplier": 0.44,
 		"storminess": 0.08,
-		"blood_tint": 0.3,
-		"toxic_tint": 0.46,
-		"purple_tint": 0.36,
-		"void_depth": 0.66
+		"blood_tint": 0.03,
+		"toxic_tint": 0.16,
+		"purple_tint": 0.03,
+		"void_depth": 0.34
 	},
 	WEATHER_FOGGY: {
-		"sky_shadow": 0.52,
-		"fog_density": 0.048,
+		"sky_shadow": 0.58,
+		"fog_density": 0.008,
 		"rain_amount": 0.0,
-		"light_multiplier": 0.18,
-		"ambient_multiplier": 0.22,
+		"light_multiplier": 0.42,
+		"ambient_multiplier": 0.38,
 		"storminess": 0.12,
-		"blood_tint": 0.36,
-		"toxic_tint": 0.72,
-		"purple_tint": 0.58,
-		"void_depth": 0.8
+		"blood_tint": 0.04,
+		"toxic_tint": 0.2,
+		"purple_tint": 0.04,
+		"void_depth": 0.38
 	},
 	WEATHER_RAIN: {
-		"sky_shadow": 0.7,
-		"fog_density": 0.038,
+		"sky_shadow": 0.72,
+		"fog_density": 0.007,
 		"rain_amount": 0.86,
-		"light_multiplier": 0.14,
-		"ambient_multiplier": 0.18,
+		"light_multiplier": 0.34,
+		"ambient_multiplier": 0.3,
 		"storminess": 0.48,
-		"blood_tint": 0.48,
-		"toxic_tint": 0.58,
-		"purple_tint": 0.52,
-		"void_depth": 0.88
+		"blood_tint": 0.05,
+		"toxic_tint": 0.18,
+		"purple_tint": 0.02,
+		"void_depth": 0.44
 	},
 	WEATHER_STORM: {
 		"sky_shadow": 0.95,
-		"fog_density": 0.065,
+		"fog_density": 0.012,
 		"rain_amount": 1.0,
-		"light_multiplier": 0.06,
-		"ambient_multiplier": 0.11,
+		"light_multiplier": 0.24,
+		"ambient_multiplier": 0.26,
 		"storminess": 1.0,
-		"blood_tint": 0.68,
-		"toxic_tint": 0.86,
-		"purple_tint": 0.78,
-		"void_depth": 1.0
+		"blood_tint": 0.08,
+		"toxic_tint": 0.2,
+		"purple_tint": 0.02,
+		"void_depth": 0.52
 	}
 }
 
 const WEATHER_WEIGHTS := {
-	WEATHER_CLEAR: 0.06,
-	WEATHER_CLOUDY: 0.12,
-	WEATHER_FOGGY: 0.3,
-	WEATHER_RAIN: 0.28,
-	WEATHER_STORM: 0.24
+	WEATHER_CLEAR: 0.14,
+	WEATHER_CLOUDY: 0.32,
+	WEATHER_FOGGY: 0.22,
+	WEATHER_RAIN: 0.22,
+	WEATHER_STORM: 0.1
 }
 
 @export var cycle_duration_seconds: float = 420.0
-@export_range(0.0, 1.0, 0.001) var start_time_of_day: float = 0.82
+@export_range(0.0, 1.0, 0.001) var start_time_of_day: float = 0.8
 @export var weather_hold_duration: Vector2 = Vector2(16.0, 28.0)
 @export var weather_transition_duration: float = 9.5
 @export var rain_follow_target_path: NodePath
@@ -92,6 +92,8 @@ var follow_target: Node3D
 var rain_particles: GPUParticles3D
 var rain_material: ParticleProcessMaterial
 var lightning_light: OmniLight3D
+var ritual_light_green: OmniLight3D
+var ritual_light_purple: OmniLight3D
 
 var rng := RandomNumberGenerator.new()
 var time_of_day: float = 0.0
@@ -104,6 +106,7 @@ var lightning_flash_duration: float = 0.0
 var lightning_flash_remaining: float = 0.0
 var lightning_peak_energy: float = 0.0
 var lightning_flash_color: Color = Color(0.9, 0.96, 1.0, 1.0)
+var lightshow_time: float = 0.0
 
 func _ready():
 	rng.randomize()
@@ -129,6 +132,7 @@ func _ready():
 func _process(delta: float):
 	if cycle_duration_seconds > 0.0:
 		time_of_day = wrapf(time_of_day + (delta / cycle_duration_seconds), 0.0, 1.0)
+	lightshow_time += delta
 	_update_weather_state(delta)
 	_update_lightning(delta)
 	_update_effect_positions()
@@ -158,16 +162,16 @@ func _configure_environment_defaults():
 	environment.background_mode = Environment.BG_COLOR
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_sky_contribution = 0.0
-	environment.ambient_light_energy = 0.18
-	environment.ambient_light_color = Color(0.11, 0.13, 0.15, 1.0)
+	environment.ambient_light_energy = 0.34
+	environment.ambient_light_color = Color(0.24, 0.26, 0.3, 1.0)
 	environment.fog_enabled = true
-	environment.fog_density = 0.03
-	environment.fog_aerial_perspective = 0.28
-	environment.fog_sky_affect = 0.62
-	environment.fog_light_color = Color(0.24, 0.34, 0.3, 1.0)
-	environment.fog_light_energy = 0.48
+	environment.fog_density = 0.0035
+	environment.fog_aerial_perspective = 0.1
+	environment.fog_sky_affect = 0.16
+	environment.fog_light_color = Color(0.48, 0.52, 0.56, 1.0)
+	environment.fog_light_energy = 0.52
 	sun.shadow_enabled = true
-	sun.light_energy = 0.28
+	sun.light_energy = 0.72
 
 func _create_weather_effects():
 	rain_particles = GPUParticles3D.new()
@@ -204,6 +208,19 @@ func _create_weather_effects():
 	lightning_light.omni_range = 42.0
 	lightning_light.shadow_enabled = false
 	add_child(lightning_light)
+
+	ritual_light_green = _create_show_light("RitualLightGreen", Color(0.52, 0.88, 0.6, 1.0))
+	ritual_light_purple = _create_show_light("RitualLightPurple", Color(1.0, 0.7, 0.36, 1.0))
+
+func _create_show_light(light_name: String, base_color: Color) -> OmniLight3D:
+	var show_light := OmniLight3D.new()
+	show_light.name = light_name
+	show_light.light_color = base_color
+	show_light.light_energy = 0.0
+	show_light.omni_range = 18.0
+	show_light.shadow_enabled = false
+	add_child(show_light)
+	return show_light
 
 func _build_rain_mesh() -> QuadMesh:
 	var mesh := QuadMesh.new()
@@ -279,6 +296,33 @@ func _update_effect_positions():
 		rain_particles.global_position = Vector3(target_position.x, target_position.y + rain_follow_height, target_position.z)
 	if lightning_light != null and lightning_flash_remaining <= 0.0:
 		lightning_light.global_position = Vector3(target_position.x, target_position.y + rain_follow_height + 4.0, target_position.z)
+	var purple_strength := _get_weather_value("purple_tint")
+	var toxic_strength := _get_weather_value("toxic_tint")
+	var show_strength := clampf(0.18 + (purple_strength * 0.08) + (toxic_strength * 0.16), 0.18, 0.48)
+	var orbit_radius := lerpf(4.5, 7.5, show_strength)
+	var green_orbit := lightshow_time * 1.15
+	var purple_orbit := (lightshow_time * -0.92) + PI
+	var hover_base := target_position.y + 2.8 + (sin(lightshow_time * 1.6) * 0.35)
+	var green_pulse := 0.5 + (sin(lightshow_time * 3.8) * 0.5)
+	var purple_pulse := 0.5 + (sin((lightshow_time * 3.2) + 1.2) * 0.5)
+	if ritual_light_green != null:
+		ritual_light_green.global_position = Vector3(
+			target_position.x + (cos(green_orbit) * orbit_radius),
+			hover_base,
+			target_position.z + (sin(green_orbit) * orbit_radius)
+		)
+		ritual_light_green.light_energy = lerpf(0.18, 0.52, show_strength) + (green_pulse * 0.12)
+		ritual_light_green.omni_range = lerpf(10.0, 14.0, show_strength)
+		ritual_light_green.light_color = Color(0.52, 0.86, 0.62, 1.0).lerp(Color(0.7, 0.92, 0.74, 1.0), green_pulse * 0.14)
+	if ritual_light_purple != null:
+		ritual_light_purple.global_position = Vector3(
+			target_position.x + (cos(purple_orbit) * orbit_radius),
+			hover_base + 0.7,
+			target_position.z + (sin(purple_orbit) * orbit_radius)
+		)
+		ritual_light_purple.light_energy = lerpf(0.16, 0.48, show_strength) + (purple_pulse * 0.1)
+		ritual_light_purple.omni_range = lerpf(10.0, 14.0, show_strength)
+		ritual_light_purple.light_color = Color(1.0, 0.7, 0.38, 1.0).lerp(Color(1.0, 0.82, 0.54, 1.0), purple_pulse * 0.12)
 
 func _apply_environment():
 	var orbit_angle := time_of_day * TAU
@@ -296,7 +340,7 @@ func _apply_environment():
 	var daylight := smoothstep(-0.16, 0.1, sun_position.y)
 	var twilight := clampf(1.0 - absf(sun_position.y * 4.0), 0.0, 1.0)
 	var sky_shadow := _get_weather_value("sky_shadow")
-	var fog_density := _get_weather_value("fog_density") + ((1.0 - daylight) * 0.018)
+	var fog_density := _get_weather_value("fog_density") + ((1.0 - daylight) * 0.0025)
 	var ambient_multiplier := _get_weather_value("ambient_multiplier")
 	var light_multiplier := _get_weather_value("light_multiplier")
 	var rain_amount := _get_weather_value("rain_amount")
@@ -305,55 +349,60 @@ func _apply_environment():
 	var purple_tint := _get_weather_value("purple_tint")
 	var void_depth := _get_weather_value("void_depth")
 	var lightning_mix := clampf(lightning_light.light_energy / 5.8, 0.0, 1.0)
-	var horror_daylight := daylight * 0.34
+	var show_mix := 0.5 + (sin(lightshow_time * 1.9) * 0.5)
+	var lightshow_color := Color(0.46, 0.86, 0.58, 1.0).lerp(Color(1.0, 0.72, 0.38, 1.0), show_mix)
+	var horror_daylight := 0.28 + (daylight * 0.24)
 
-	var void_black := Color(0.01, 0.012, 0.01, 1.0)
-	var dead_night := Color(0.02, 0.035, 0.028, 1.0)
-	var toxic_green := Color(0.16, 0.34, 0.18, 1.0)
-	var arcane_purple := Color(0.38, 0.14, 0.44, 1.0)
-	var blood_red := Color(0.46, 0.04, 0.02, 1.0)
+	var void_black := Color(0.03, 0.04, 0.07, 1.0)
+	var dead_night := Color(0.08, 0.11, 0.18, 1.0)
+	var toxic_green := Color(0.18, 0.28, 0.22, 1.0)
+	var arcane_purple := Color(0.16, 0.16, 0.22, 1.0)
+	var blood_red := Color(0.42, 0.22, 0.18, 1.0)
 	var sky_color := void_black.lerp(dead_night, horror_daylight)
 	sky_color = sky_color.lerp(toxic_green, toxic_tint * 0.48)
-	sky_color = sky_color.lerp(arcane_purple, purple_tint * 0.42)
+	sky_color = sky_color.lerp(arcane_purple, purple_tint * 0.12)
+	sky_color = sky_color.lerp(lightshow_color, 0.04 + (toxic_tint * 0.04))
 	sky_color = sky_color.lerp(blood_red, maxf(twilight * 0.72, blood_tint * 0.5))
-	sky_color = sky_color.lerp(Color(0.0, 0.0, 0.0, 1.0), void_depth * 0.48)
+	sky_color = sky_color.lerp(Color(0.02, 0.03, 0.05, 1.0), void_depth * 0.18)
 	sky_color = sky_color.lerp(lightning_flash_color, lightning_mix * 0.24)
 
-	var ambient_base := Color(0.06, 0.07, 0.075, 1.0)
-	var ambient_toxic := Color(0.08, 0.18, 0.09, 1.0)
-	var ambient_purple := Color(0.16, 0.08, 0.2, 1.0)
-	var ambient_blood := Color(0.16, 0.04, 0.03, 1.0)
+	var ambient_base := Color(0.16, 0.18, 0.22, 1.0)
+	var ambient_toxic := Color(0.18, 0.26, 0.2, 1.0)
+	var ambient_purple := Color(0.22, 0.2, 0.26, 1.0)
+	var ambient_blood := Color(0.4, 0.28, 0.24, 1.0)
 	var ambient_color := ambient_base.lerp(ambient_toxic, toxic_tint * 0.52)
 	ambient_color = ambient_color.lerp(ambient_purple, purple_tint * 0.42)
-	ambient_color = ambient_color.lerp(ambient_blood, blood_tint * 0.35)
-	ambient_color = ambient_color.lerp(sky_color, 0.24)
+	ambient_color = ambient_color.lerp(lightshow_color, 0.08)
+	ambient_color = ambient_color.lerp(ambient_blood, blood_tint * 0.18)
+	ambient_color = ambient_color.lerp(sky_color, 0.32)
 
-	var sick_moon := Color(0.28, 0.48, 0.3, 1.0)
-	var cursed_purple := Color(0.56, 0.24, 0.68, 1.0)
-	var dirty_day := Color(0.46, 0.54, 0.38, 1.0)
-	var dusk_sun_color := Color(0.82, 0.14, 0.08, 1.0)
+	var sick_moon := Color(0.54, 0.64, 0.76, 1.0)
+	var cursed_purple := Color(0.66, 0.58, 0.54, 1.0)
+	var dirty_day := Color(0.7, 0.72, 0.62, 1.0)
+	var dusk_sun_color := Color(0.94, 0.58, 0.36, 1.0)
 	var sun_color := sick_moon.lerp(dirty_day, horror_daylight)
-	sun_color = sun_color.lerp(cursed_purple, purple_tint * 0.36)
-	sun_color = sun_color.lerp(dusk_sun_color, maxf(twilight * 0.78, blood_tint * 0.22))
-	sun_color = sun_color.lerp(lightning_flash_color, lightning_mix * 0.38)
+	sun_color = sun_color.lerp(cursed_purple, purple_tint * 0.08)
+	sun_color = sun_color.lerp(dusk_sun_color, maxf(twilight * 0.54, blood_tint * 0.12))
+	sun_color = sun_color.lerp(lightning_flash_color, lightning_mix * 0.28)
 
 	environment.background_color = sky_color
 	environment.ambient_light_color = ambient_color
-	environment.ambient_light_energy = lerpf(0.06, 0.22, horror_daylight) * ambient_multiplier
+	environment.ambient_light_energy = lerpf(0.22, 0.42, horror_daylight) * (ambient_multiplier + 0.26)
 	environment.fog_enabled = fog_density > 0.001
 	environment.fog_density = fog_density
-	environment.fog_aerial_perspective = lerpf(0.34, 0.62, rain_amount)
-	environment.fog_sky_affect = lerpf(0.62, 0.9, sky_shadow)
-	var fog_color := Color(0.16, 0.18, 0.18, 1.0)
-	fog_color = fog_color.lerp(Color(0.22, 0.42, 0.24, 1.0), toxic_tint * 0.82)
-	fog_color = fog_color.lerp(Color(0.34, 0.18, 0.42, 1.0), purple_tint * 0.8)
-	fog_color = fog_color.lerp(Color(0.36, 0.08, 0.06, 1.0), blood_tint * 0.34)
+	environment.fog_aerial_perspective = lerpf(0.08, 0.18, rain_amount)
+	environment.fog_sky_affect = lerpf(0.12, 0.24, sky_shadow)
+	var fog_color := Color(0.22, 0.24, 0.28, 1.0)
+	fog_color = fog_color.lerp(Color(0.26, 0.32, 0.28, 1.0), toxic_tint * 0.24)
+	fog_color = fog_color.lerp(Color(0.3, 0.28, 0.24, 1.0), purple_tint * 0.12)
+	fog_color = fog_color.lerp(lightshow_color, 0.03)
+	fog_color = fog_color.lerp(Color(0.5, 0.34, 0.28, 1.0), blood_tint * 0.04)
 	fog_color = fog_color.lerp(lightning_flash_color, lightning_mix * 0.2)
 	environment.fog_light_color = fog_color
-	environment.fog_light_energy = lerpf(0.24, 0.46, horror_daylight) + (purple_tint * 0.08) + (lightning_mix * 0.14)
+	environment.fog_light_energy = lerpf(0.34, 0.46, horror_daylight) + (purple_tint * 0.01) + (lightning_mix * 0.06)
 
 	sun.light_color = sun_color
-	sun.light_energy = (lerpf(0.015, 0.42, horror_daylight) * light_multiplier) + (lightning_light.light_energy * 0.24)
+	sun.light_energy = (lerpf(0.42, 0.96, horror_daylight) * (light_multiplier + 0.22)) + (lightning_light.light_energy * 0.18)
 
 	_update_rain_effect(rain_amount)
 
